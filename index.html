@@ -9,7 +9,7 @@
     
     <!-- PWA Links -->
     <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3790/3790109.png">
     
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -165,7 +165,7 @@
             btnInstall.classList.add('hidden');
         });
 
-        // --- App Logic (Igual ao anterior) ---
+        // --- App Logic ---
         let selectedImages = [];
         let apiKey = localStorage.getItem('gemini_api_key') || '';
 
@@ -253,16 +253,31 @@
             elResultPlaceholder.classList.remove('hidden');
             toggleLoading(true, 'Enviando para Gemini...');
 
+            // --- PROMPT ATUALIZADO PARA PRESERVAÇÃO FACIAL ---
             const promptText = `
-                Aja como um gerador de imagens especialista.
-                Crie uma nova imagem seguindo estritamente esta composição:
-                1. OBJETO PRINCIPAL: Uma Bola de Natal de vidro transparente (Christmas glass bauble), centralizada, pendurada por um fio prateado.
-                2. CONTEÚDO DENTRO DA BOLA: Coloque AS PESSOAS DAS FOTOS FORNECIDAS dentro desta esfera de vidro.
-                   - ROUPAS OBRIGATÓRIAS: Suéteres de tricô vermelhos vibrantes (ugly christmas sweater) com estampas natalinas brancas.
-                   - DETALHE: Se houver uma figura feminina, use cachecol vermelho bordô.
-                   - POSE: Abraçados e sorrindo, iluminação frontal suave.
-                3. AMBIENTE: Pinheiro verde escuro, luzes branco quente, fundo azul noturno com bokeh dourado.
-                4. ESTILO: Macrofotografia, Hiper-realismo, 8k, renderização Octane.
+                PRIORIDADE CRÍTICA: PRESERVAÇÃO FACIAL ABSOLUTA (FACE ID LOCK).
+                Você é um especialista em manipulação de imagens hiper-realista.
+                
+                DIRETRIZ MÁXIMA (NÃO IGNORAR):
+                - Mantenha EXATAMENTE as características faciais (olhos, nariz, boca, estrutura óssea, tom de pele) das pessoas nas fotos fornecidas.
+                - NÃO crie rostos genéricos. Use os rostos das fotos como textura e geometria obrigatória.
+                - A iluminação deve interagir com os rostos de forma natural, mas SEM alterar a identidade.
+                
+                COMPOSIÇÃO DA IMAGEM:
+                1. OBJETO PRINCIPAL: Uma Bola de Natal de vidro transparente e cristalino, pendurada por um fio prateado delicado.
+                
+                2. SUJEITOS (DENTRO DA BOLA DE VIDRO):
+                   - Integre as pessoas das fotos dentro da esfera de vidro.
+                   - ROUPAS OBRIGATÓRIAS: Suéteres de tricô vermelhos vibrantes (estilo "ugly christmas sweater") com estampas de flocos de neve brancos. A textura da lã deve ser visível.
+                   - ACESSÓRIOS: Se houver mulher, adicione um cachecol vermelho bordô elegante.
+                   - POSE: Abraçados, felizes, olhando para a câmera ou interagindo carinhosamente.
+                
+                3. AMBIENTE E ILUMINAÇÃO:
+                   - PRIMEIRO PLANO: Galhos de pinheiro verde escuro texturizados no topo.
+                   - ILUMINAÇÃO: Luzes de fada (fairy lights) branco quente, criando reflexos especulares no vidro da bola.
+                   - FUNDO: Azul noturno (midnight blue) com forte desfoque (bokeh) de luzes douradas.
+                
+                4. ESTILO TÉCNICO: Fotografia Macro, 8k, Renderização Octane, Detalhes nítidos, Atmosfera mágica e festiva.
             `;
 
             try {
@@ -270,11 +285,11 @@
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent?key=${apiKey}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [{ parts }], generationConfig: { responseModalities: ["IMAGE"], temperature: 0.4 } })
+                    body: JSON.stringify({ contents: [{ parts }], generationConfig: { responseModalities: ["IMAGE"], temperature: 0.3 } }) 
                 });
 
                 if (!response.ok) { const errData = await response.json(); throw new Error(errData.error?.message || 'Falha na requisição.'); }
-                toggleLoading(true, 'Renderizando...');
+                toggleLoading(true, 'Renderizando em 8K...');
                 const data = await response.json();
                 const generatedContent = data.candidates?.[0]?.content?.parts?.[0];
 
