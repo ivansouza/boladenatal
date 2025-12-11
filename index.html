@@ -36,7 +36,6 @@
                 <h1 class="text-xl font-bold bg-gradient-to-r from-red-400 to-amber-200 bg-clip-text text-transparent">Natal AI</h1>
             </div>
             <div class="flex items-center gap-2">
-                <!-- Install Button (Hidden by default) -->
                 <button id="btnInstall" class="hidden bg-slate-700 hover:bg-slate-600 text-xs text-white font-bold py-2 px-3 rounded-full transition-colors flex items-center gap-1">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                     Instalar
@@ -76,6 +75,19 @@
                 <div id="previewContainer" class="hidden space-y-2 fade-in">
                     <p class="text-xs font-bold text-slate-500 uppercase tracking-widest">Fotos Selecionadas</p>
                     <div id="previewList" class="flex gap-3 overflow-x-auto pb-2 scrollbar-hide snap-x"></div>
+                </div>
+
+                <!-- Advanced Prompt Toggle -->
+                <div class="fade-in">
+                    <button id="btnTogglePrompt" class="flex items-center gap-2 text-sm text-red-400 hover:text-red-300 font-medium transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                        Editar Prompt / Detalhes (Avançado)
+                    </button>
+                    
+                    <div id="promptContainer" class="hidden mt-3 space-y-2">
+                        <textarea id="promptInput" rows="8" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-xs text-slate-300 font-mono focus:border-red-500 focus:ring-1 focus:ring-red-500 outline-none scrollbar-hide" spellcheck="false"></textarea>
+                        <button id="btnResetPrompt" class="text-xs text-slate-500 hover:text-white underline">Restaurar Prompt Padrão</button>
+                    </div>
                 </div>
 
                 <!-- Error Message -->
@@ -137,6 +149,31 @@
     </div>
 
     <script>
+        // --- CONSTANTE: PROMPT PADRÃO (HARDCORE FACE ID) ---
+        const DEFAULT_PROMPT = `PRIORIDADE CRÍTICA: PRESERVAÇÃO FACIAL ABSOLUTA (FACE ID LOCK).
+Você é um especialista em manipulação de imagens hiper-realista.
+
+DIRETRIZ MÁXIMA (NÃO IGNORAR):
+- Mantenha EXATAMENTE as características faciais (olhos, nariz, boca, estrutura óssea, tom de pele) das pessoas nas fotos fornecidas.
+- NÃO crie rostos genéricos. Use os rostos das fotos como textura e geometria obrigatória.
+- A iluminação deve interagir com os rostos de forma natural, mas SEM alterar a identidade.
+
+COMPOSIÇÃO DA IMAGEM:
+1. OBJETO PRINCIPAL: Uma Bola de Natal de vidro transparente e cristalino, pendurada por um fio prateado delicado.
+
+2. SUJEITOS (DENTRO DA BOLA DE VIDRO):
+   - Integre as pessoas das fotos dentro da esfera de vidro.
+   - ROUPAS OBRIGATÓRIAS: Suéteres de tricô vermelhos vibrantes (estilo "ugly christmas sweater") com estampas de flocos de neve brancos. A textura da lã deve ser visível.
+   - ACESSÓRIOS: Se houver mulher, adicione um cachecol vermelho bordô elegante.
+   - POSE: Abraçados, felizes, olhando para a câmera ou interagindo carinhosamente.
+
+3. AMBIENTE E ILUMINAÇÃO:
+   - PRIMEIRO PLANO: Galhos de pinheiro verde escuro texturizados no topo.
+   - ILUMINAÇÃO: Luzes de fada (fairy lights) branco quente, criando reflexos especulares no vidro da bola.
+   - FUNDO: Azul noturno (midnight blue) com forte desfoque (bokeh) de luzes douradas.
+
+4. ESTILO TÉCNICO: Fotografia Macro, 8k, Renderização Octane, Detalhes nítidos, Atmosfera mágica e festiva.`;
+
         // --- PWA: Service Worker Registration ---
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
@@ -153,7 +190,7 @@
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            btnInstall.classList.remove('hidden'); // Mostrar botão
+            btnInstall.classList.remove('hidden');
         });
 
         btnInstall.addEventListener('click', async () => {
@@ -185,11 +222,37 @@
         const elBtnText = document.getElementById('btnText');
         const elIconSparkles = document.getElementById('iconSparkles');
         const elIconLoading = document.getElementById('iconLoading');
+        
+        // Novos elementos para Prompt
+        const elPromptContainer = document.getElementById('promptContainer');
+        const elPromptInput = document.getElementById('promptInput');
+        const elBtnTogglePrompt = document.getElementById('btnTogglePrompt');
+        const elBtnResetPrompt = document.getElementById('btnResetPrompt');
 
+        // Inicialização
         if (apiKey) elApiKeyInput.value = apiKey;
+        elPromptInput.value = DEFAULT_PROMPT; // Carrega o prompt padrão no textarea
 
+        // --- Event Listeners UI ---
         const showError = (msg) => { elErrorText.textContent = msg; elErrorMsg.classList.remove('hidden'); };
         const hideError = () => { elErrorMsg.classList.add('hidden'); };
+        
+        // Toggle Prompt Visibility
+        elBtnTogglePrompt.onclick = () => {
+            if (elPromptContainer.classList.contains('hidden')) {
+                elPromptContainer.classList.remove('hidden');
+                elBtnTogglePrompt.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg> Ocultar Prompt`;
+            } else {
+                elPromptContainer.classList.add('hidden');
+                elBtnTogglePrompt.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg> Editar Prompt / Detalhes (Avançado)`;
+            }
+        };
+
+        // Reset Prompt
+        elBtnResetPrompt.onclick = () => {
+            elPromptInput.value = DEFAULT_PROMPT;
+        };
+
         const toggleLoading = (isLoading, status = '') => {
             if (isLoading) {
                 elLoadingOverlay.classList.remove('hidden');
@@ -248,37 +311,14 @@
         elBtnGenerate.onclick = async () => {
             if (!apiKey) { showError('Configure a API Key (ícone engrenagem).'); elSettingsModal.classList.remove('hidden'); return; }
             if (selectedImages.length === 0) { showError('Selecione pelo menos uma foto.'); return; }
+            
+            // LER O PROMPT ATUAL DA CAIXA DE TEXTO (EDITÁVEL)
+            const promptText = elPromptInput.value;
+
             hideError();
             elResultContainer.classList.add('hidden');
             elResultPlaceholder.classList.remove('hidden');
             toggleLoading(true, 'Enviando para Gemini...');
-
-            // --- PROMPT ATUALIZADO PARA PRESERVAÇÃO FACIAL ---
-            const promptText = `
-                PRIORIDADE CRÍTICA: PRESERVAÇÃO FACIAL ABSOLUTA (FACE ID LOCK).
-                Você é um especialista em manipulação de imagens hiper-realista.
-                
-                DIRETRIZ MÁXIMA (NÃO IGNORAR):
-                - Mantenha EXATAMENTE as características faciais (olhos, nariz, boca, estrutura óssea, tom de pele) das pessoas nas fotos fornecidas.
-                - NÃO crie rostos genéricos. Use os rostos das fotos como textura e geometria obrigatória.
-                - A iluminação deve interagir com os rostos de forma natural, mas SEM alterar a identidade.
-                
-                COMPOSIÇÃO DA IMAGEM:
-                1. OBJETO PRINCIPAL: Uma Bola de Natal de vidro transparente e cristalino, pendurada por um fio prateado delicado.
-                
-                2. SUJEITOS (DENTRO DA BOLA DE VIDRO):
-                   - Integre as pessoas das fotos dentro da esfera de vidro.
-                   - ROUPAS OBRIGATÓRIAS: Suéteres de tricô vermelhos vibrantes (estilo "ugly christmas sweater") com estampas de flocos de neve brancos. A textura da lã deve ser visível.
-                   - ACESSÓRIOS: Se houver mulher, adicione um cachecol vermelho bordô elegante.
-                   - POSE: Abraçados, felizes, olhando para a câmera ou interagindo carinhosamente.
-                
-                3. AMBIENTE E ILUMINAÇÃO:
-                   - PRIMEIRO PLANO: Galhos de pinheiro verde escuro texturizados no topo.
-                   - ILUMINAÇÃO: Luzes de fada (fairy lights) branco quente, criando reflexos especulares no vidro da bola.
-                   - FUNDO: Azul noturno (midnight blue) com forte desfoque (bokeh) de luzes douradas.
-                
-                4. ESTILO TÉCNICO: Fotografia Macro, 8k, Renderização Octane, Detalhes nítidos, Atmosfera mágica e festiva.
-            `;
 
             try {
                 const parts = [{ text: promptText }, ...selectedImages.map(img => ({ inlineData: { mimeType: img.type, data: img.base64 } }))];
